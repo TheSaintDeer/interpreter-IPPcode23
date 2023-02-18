@@ -26,30 +26,52 @@ function checkArguments() {
     printParametersError();
 }
 
+function filterArray ($var) {
+    return ($var !== NULL && $var !== FALSE && $var !== "");
+}
+
+function countOrderArguments($count, &$parts) {
+    if (count($parts) != $count)
+        printLexicalError();
+
+    $arr = array();
+    foreach ($parts as $element) {
+        array_push($arr, $element);
+    }   
+
+    $parts = $arr;
+}
+
 function getLine($writer, $line) {
 
     $line = trim($line, " \n");
     $data = explode('#', $line);
 
     if ($writer->getInstructionOrder() == 0) {
-        if (strtolower($data[0]) != ".ippcode23")
+        
+        if ($data[0] == "")
+            return;
+
+        if ($data[0] != ".IPPcode23")
             printHeaderError();
 
         $writer->startWrite();
     } else {
 
-        $parts = explode(' ', $data[0]);
+        $parts = array_filter(explode(' ', $data[0]), "filterArray");
 
-        switch($parts[0]){
+        switch($parts[0]) {
 
             case "DEFVAR":
             case "POPS": 
+                countOrderArguments(2, $parts);
                 $instruction = new VarInstr($parts[0], $parts[1]);
                 break;
 
             case "CALL":
             case "LABEL":
             case "JUMP":
+                countOrderArguments(2, $parts);
                 $instruction = new LabelInstr($parts[0], $parts[1]);
                 break;
 
@@ -58,6 +80,7 @@ function getLine($writer, $line) {
             case "POPFRAME":
             case "RETURN":
             case "BREAK":
+                countOrderArguments(1, $parts);
                 $instruction = new FreeInstr($parts[0]);
                 break;
 
@@ -66,6 +89,7 @@ function getLine($writer, $line) {
             case "STRLEN":
             case "TYPE":
             case "NOT":
+                countOrderArguments(3, $parts);
                 $instruction = new VarSymbInstr($parts[0], $parts[1], $parts[2]);
                 break;
 
@@ -73,6 +97,7 @@ function getLine($writer, $line) {
             case "WRITE":
             case "EXIT":
             case "DPRINT":
+                countOrderArguments(2, $parts);
                 $instruction = new SymbInstr($parts[0], $parts[1]);
                 break;
 
@@ -89,15 +114,18 @@ function getLine($writer, $line) {
             case "CONCAT":
             case "GETCHAR":
             case "SETCHAR":
+                countOrderArguments(4, $parts);
                 $instruction = new Var2SymbInstr($parts[0], $parts[1], $parts[2], $parts[3]);
                 break;
 
             case "READ":
+                countOrderArguments(3, $parts);
                 $instruction = new VarTypeInstr($parts[0], $parts[1], $parts[2]);
                 break;
 
             case "JUMPIFEQ":
             case "JUMPIFNEQ":
+                countOrderArguments(4, $parts);
                 $instruction = new Label2SymbInstr($parts[0], $parts[1], $parts[2], $parts[3]);
                 break;
 
@@ -141,8 +169,75 @@ function printLexicalError() {
 }
 
 /*-------------------------------------------------
+                    TYPES OF ARGUMENTS
+-------------------------------------------------*/
+
+
+function isVar($arg) {
+    if (preg_match('/^(GF|LF|TF)@(_|-|\$|&|%|\*|!|\?|[a-zA-Z])(_|-|\$|&|%|\*|!|\?|[a-zA-Z0-9])*$/', $arg))
+        return $arg;
+    
+    printLexicalError();
+}
+
+function isConst($arg) {
+    if (preg_match('/^(int|bool|string|nil)@.*$/', $arg)) {
+
+        $data = explode('@', $arg, 2);
+        switch ($data[0]) {
+            case "int":
+                if (preg_match('/^0|-\d\d*|\d\d*$/', $data[1]))
+                    return $arg;
+                break;
+
+            case "bool":
+                if (preg_match('/^(true|false)$/', $data[1]))
+                    return $arg;
+                break;
+
+            case "string":
+                if (preg_match('/^(_|\D|\\\d\d\d)(\D|\\\d\d\d|\d|[\<,\-,\>,\/,\\,\@])*$/', $data[1]))
+                    return $arg;
+                break;
+
+            case "nil":
+                if (preg_match('/^nil$/', $data[1]))
+                    return $arg;
+                break;
+        }
+
+    } 
+    
+    printLexicalError();
+}
+
+function isType($arg) {
+    if (preg_match('/^(int|bool|string)$/', $arg))
+        return $arg;
+    
+    printLexicalError();
+}
+
+function isLabel($arg) {
+    if (preg_match('/^(_|-|\$|&|%|\*|[a-zA-Z])(_|-|\$|&|%|\*|[a-zA-Z0-9])*$/', $arg))
+        return $arg;
+    
+    printLexicalError();
+}
+
+function isSymb($arg) {
+    if (preg_match('/^(int|bool|string|nil)@.*$/', $arg))
+        return isConst($arg);
+    elseif (preg_match('/^(GF|LF|TF)@.*$/', $arg))
+        return isVar($arg);
+
+    printLexicalError();
+}
+
+/*-------------------------------------------------
                     CLASS WRITER
 -------------------------------------------------*/
+
 
 class Writer {
     private $xml;
@@ -154,7 +249,7 @@ class Writer {
         $this->xml = new XMLWriter;
         $this->xml->openMemory();
         $this->xml->setIndent(true);
-        $this->xml->setIndentString("\t");
+        $this->xml->setIndentString("  ");
 
         $this->xml->startDocument("1.0", "UTF-8");
         $this->xml->startElement('program');
@@ -195,7 +290,7 @@ class Writer {
     }
 
     public function writeSymb($data) {
-        $dataType = explode("@", $data);
+        $dataType = explode("@", $data, 2);
 
         if (in_array($dataType[0], array("GF", "LF", "TF")))
             $this->writeArgument("var", $data);
@@ -217,7 +312,7 @@ class Writer {
 }
 
 /*-------------------------------------------------
-                    CLASSES CREATOR
+                    CLASSES OF CREATORS
 -------------------------------------------------*/
 
 
@@ -226,9 +321,7 @@ abstract class InstructionCreator {
     abstract public function getInstruction(): ArgumentsProducts;
 
     public function convertToXML($writer): void {
-
         $instruction = $this->getInstruction();
-
         $instruction->fillWriter($writer);
     }
 }
@@ -351,7 +444,7 @@ class Label2SymbInstr extends InstructionCreator {
 }
 
 /*-------------------------------------------------
-                    CLASSES PRODUCT
+                    CLASSES OF PRODUCTS
 -------------------------------------------------*/
 
 
@@ -366,7 +459,7 @@ class VarArg implements ArgumentsProducts {
 
     public function __construct($inst, $var) {
         $this->inst = $inst;
-        $this->var = $var;
+        $this->var = isVar($var);
     }
     
     public function fillWriter($writer): void {
@@ -382,7 +475,7 @@ class LabelArg implements ArgumentsProducts {
 
     public function __construct($inst, $label) {
         $this->inst = $inst;
-        $this->label = $label;
+        $this->label = isLabel($label);
     }
     
     public function fillWriter($writer): void {
@@ -412,9 +505,9 @@ class Var2SymbArg implements ArgumentsProducts {
 
     public function __construct(string $inst, string $var, string $symb1, string $symb2) {
         $this->inst = $inst;
-        $this->var = $var;
-        $this->symb1 = $symb1;
-        $this->symb2 = $symb2;
+        $this->var = isVar($var);
+        $this->symb1 = isSymb($symb1);
+        $this->symb2 = isSymb($symb2);
     }
     
     public function fillWriter($writer): void {
@@ -432,7 +525,7 @@ class SymbArg implements ArgumentsProducts {
 
     public function __construct($inst, $symb) {
         $this->inst = $inst;
-        $this->symb = $symb;
+        $this->symb = isSymb($symb);
     }
     
     public function fillWriter($writer): void {
@@ -448,8 +541,8 @@ class VarSymbArg implements ArgumentsProducts {
 
     public function __construct($inst, $var, $symb) {
         $this->inst = $inst;
-        $this->var = $var;
-        $this->symb = $symb;
+        $this->var = isVar($var);
+        $this->symb = isSymb($symb);
     }
     
     public function fillWriter($writer): void {
@@ -466,8 +559,8 @@ class VarTypeArg implements ArgumentsProducts {
 
     public function __construct($inst, $var, $type) {
         $this->inst = $inst;
-        $this->var = $var;
-        $this->type = $type;
+        $this->var = isVar($var);
+        $this->type = isType($type);
     }
     
     public function fillWriter($writer): void {
@@ -484,9 +577,9 @@ class Label2SymbArg implements ArgumentsProducts {
 
     public function __construct(string $inst, string $label, string $symb1, string $symb2) {
         $this->inst = $inst;
-        $this->label = $label;
-        $this->symb1 = $symb1;
-        $this->symb2 = $symb2;
+        $this->label = isLabel($label);
+        $this->symb1 = isSymb($symb1);
+        $this->symb2 = isSymb($symb2);
     }
     
     public function fillWriter($writer): void {
