@@ -14,14 +14,18 @@ ini_set('display_errors', 'stderr');
 function checkArguments() {
     global $argc;
 
-    $opts = getopt("", ["help"]);
+    $opts = getopt("", ["help", "stats:"]);
 
     if ($argc == 1)
         return;
 
-    elseif ($argc == 2)
+    elseif ($argc > 2) {   
         if (array_key_exists('help', $opts))
             printHelp();
+
+        if (array_key_exists('stats', $opts))
+            return;
+    }
 
     printParametersError();
 }
@@ -42,10 +46,10 @@ function countOrderArguments($count, &$parts) {
     $parts = $arr;
 }
 
-function getLine($writer, $line) {
+function getLine($writer, $stats, $line) {
 
     $line = trim($line, " \n");
-    $data = explode('#', $line);
+    $data = explode('#', $line, 2);
 
     if ($writer->getInstructionOrder() == 0) {
         
@@ -57,9 +61,8 @@ function getLine($writer, $line) {
 
         $writer->startWrite();
     } else {
-
         $parts = array_filter(explode(' ', $data[0]), "filterArray");
-
+        
         switch($parts[0]) {
 
             case "DEFVAR":
@@ -133,7 +136,16 @@ function getLine($writer, $line) {
                 printOperationCodeError();
         }
 
+
+        if (isset($data[0]) && isset($data[1]))
+            $stats->writeIn($data[0], $data[1]);
+        if (isset($data[0]) && !isset($data[1]))
+            $stats->writeIn($data[0], null);
+        if (!isset($data[0]) && isset($data[1]))
+            $stats->writeIn(null, $data[1]);
+
         $instruction->convertToXML($writer);
+
     }
 
 }
@@ -301,7 +313,6 @@ class Writer {
     }
 
     public function writeType($type) {
-        //TODO checking types
         $this->writeArgument("type", $type);
     }
 
@@ -309,6 +320,136 @@ class Writer {
         return $this->instructionOrder;
     }
 
+}
+
+/*-------------------------------------------------
+                CLASS FOR STATISTICS
+-------------------------------------------------*/
+
+
+class Statistics {
+
+    private $stats = [
+        'loc' => 0,
+        'comments' => 0,
+        'label' => 0,
+        'jumps' => 0,
+        'fwjumps' => 0,
+        'backjumps' => 0,
+    ];
+
+    private $labels = array();
+    private $calls = array();
+
+    private function addStat($stat) {
+        $this->stats[$stat]++;
+    }
+
+    public function writeIn($instr, $comment) {
+
+        if ($comment != null)
+            $this->addStat("comments");
+
+        if ($instr != null) {
+
+            $this->addStat("loc");
+            $parts = array_filter(explode(' ', $instr), "filterArray");
+
+            if ($parts[0] == "LABEL") {
+                $this->addStat("label");
+                array_push($this->labels, $parts[1]);
+            }
+
+            $isJump = in_array($parts[0], array("JUMP", "JUMPIFEQ", "JUMPIFNEQ"));
+
+            if ($isJump) {
+                $this->addStat("jumps");
+
+                if (in_array($parts[1], $this->labels))
+                    $this->addStat("fwjumps");
+                else
+                    $this->addStat("backjumps");
+            }
+
+            if ($parts[0] == "CALL") {
+                $this->addStat("jumps");
+
+                if (in_array($parts[1], $this->labels)) {
+                    $this->addStat("fwjumps");
+                    array_push($this->calls, "b");
+                } else {
+                    $this->addStat("backjumps");
+                    array_push($this->calls, "f");
+                }
+            }
+
+            if ($parts[0] == "RETURN") {
+                $this->addStat("jumps");
+
+                if (!empty($call))
+                    $move = array_pop($calls);
+
+                if ($move == "f")
+                    $this->addStat("fwjumps");
+                else
+                    $this->addStat("backjumps");
+            }
+        }
+        
+    }
+
+    public function writeOut() {
+        global $argc;
+        global $argv;
+
+        if ($argc > 2) {
+            
+            if (strncmp($argv[1], "--stats", 7) !== 0)
+                printParametersError();
+            else
+                $nameOfFile = explode("=", $argv[1]);
+            
+            $handle = fopen($nameOfFile[1], "w");
+
+            for ($i = 2; $i < $argc; $i++) {
+
+                if (strncmp($argv[$i], "--stats", 7) === 0) {
+                    fclose($handle);
+                    $nameOfFile = explode("=", $argv[$i]);
+                    $handle = fopen($nameOfFile[1], "w");
+
+                } elseif (strncmp($argv[$i], "--loc", 5) === 0) {
+                    fwrite($handle, $this->stats['loc']."\n");
+
+                } elseif (strncmp($argv[$i], "--comments", 10) === 0) {
+                    fwrite($handle, $this->stats['comments']."\n");
+
+                } elseif (strncmp($argv[$i], "--label", 7) === 0) {
+                    fwrite($handle, $this->stats['label']."\n");
+
+                } elseif (strncmp($argv[$i], "--jumps", 7) === 0) {
+                    fwrite($handle, $this->stats['jumps']."\n");
+
+                } elseif (strncmp($argv[$i], "--fwjumps", 9) === 0) {
+                    fwrite($handle, $this->stats['fwjumps']."\n");
+
+                } elseif (strncmp($argv[$i], "--backjumps", 11) === 0) {
+                    fwrite($handle, $this->stats['backjumps']."\n");
+
+                } elseif (strncmp($argv[$i], "--print", 7) === 0) {
+                    fwrite($handle, $this->stats['backjumps']);
+                    $text = explode("=", $argv[$i]);
+                    fwrite($handle, $text[1]."\n");
+                }
+
+            }
+
+            fclose($handle);
+        }
+
+        
+    }
+    
 }
 
 /*-------------------------------------------------
@@ -596,15 +737,16 @@ class Label2SymbArg implements ArgumentsProducts {
 -------------------------------------------------*/
 
 
+$writer = new Writer();
+$stats = new Statistics();
+
 checkArguments();
 
-$writer = new Writer();
-
 while ($line = fgets(STDIN))
-    getLine($writer, $line);
+    getLine($writer, $stats, $line);
 
 $writer->endWriteAndWriteOut();
+$stats->writeOut();
 exit(0);
-
 
 ?>
