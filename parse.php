@@ -19,7 +19,7 @@ function checkArguments() {
     if ($argc == 1) // one input argument
         return;
 
-    elseif ($argc > 2) { // two or more input arguments
+    elseif ($argc > 1) { // two or more input arguments
         if (array_key_exists('help', $opts))
             printHelp();
 
