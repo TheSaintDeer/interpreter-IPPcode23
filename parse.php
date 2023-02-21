@@ -10,16 +10,16 @@ ini_set('display_errors', 'stderr');
                 HELPING FUNCTIONS
 -------------------------------------------------*/
 
-
+// function to control input arguments
 function checkArguments() {
     global $argc;
 
     $opts = getopt("", ["help", "stats:"]);
 
-    if ($argc == 1)
+    if ($argc == 1) // one input argument
         return;
 
-    elseif ($argc > 2) {   
+    elseif ($argc > 2) { // two or more input arguments
         if (array_key_exists('help', $opts))
             printHelp();
 
@@ -30,10 +30,19 @@ function checkArguments() {
     printParametersError();
 }
 
+/**
+ * @var - element of array
+ * my filter for array
+ */
 function filterArray ($var) {
     return ($var !== NULL && $var !== FALSE && $var !== "");
 }
 
+/**
+ * @count - required number of function arguments
+ * @parts - function arguments
+ * count number arguments and delete empty elements in array
+ */
 function countOrderArguments($count, &$parts) {
     if (count($parts) != $count)
         printLexicalError();
@@ -46,11 +55,18 @@ function countOrderArguments($count, &$parts) {
     $parts = $arr;
 }
 
+/**
+ * @writer - variable for writting XML 
+ * @stats - variable for count statistics
+ * @line - input line
+ * function to process the input string
+ */
 function getLine($writer, $stats, $line) {
 
-    $line = trim($line, " \n");
-    $data = explode('#', $line, 2);
+    $line = trim($line, " \n"); // remove spaces at the beginning and end of a string
+    $data = explode('#', $line, 2); // splitting a string into two parts: instruction and comment
 
+    // header not yet read 
     if ($writer->getInstructionOrder() == 0) {
         
         if ($data[0] == "")
@@ -60,7 +76,7 @@ function getLine($writer, $stats, $line) {
             printHeaderError();
 
         $writer->startWrite();
-    } else {
+    } else {  // header was read
         $parts = array_filter(explode(' ', $data[0]), "filterArray");
         
         switch($parts[0]) {
@@ -137,12 +153,10 @@ function getLine($writer, $stats, $line) {
         }
 
 
-        if (isset($data[0]) && isset($data[1]))
+        if (isset($data[1]))
             $stats->writeIn($data[0], $data[1]);
-        if (isset($data[0]) && !isset($data[1]))
+        else
             $stats->writeIn($data[0], null);
-        if (!isset($data[0]) && isset($data[1]))
-            $stats->writeIn(null, $data[1]);
 
         $instruction->convertToXML($writer);
 
