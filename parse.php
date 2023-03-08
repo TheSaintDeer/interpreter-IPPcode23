@@ -72,14 +72,14 @@ function getLine($writer, $stats, $line) {
         if ($data[0] == "")
             return;
 
-        if ($data[0] != ".IPPcode23")
+        if (trim($data[0], " ") != ".IPPcode23")
             printHeaderError();
 
         $writer->startWrite();
     } else {  // header was read
         $parts = array_filter(explode(' ', $data[0]), "filterArray");
         
-        switch($parts[0]) {
+        switch(strtoupper($parts[0])) {
 
             case "DEFVAR":
             case "POPS": 
@@ -148,6 +148,9 @@ function getLine($writer, $stats, $line) {
                 $instruction = new Label2SymbInstr($parts[0], $parts[1], $parts[2], $parts[3]);
                 break;
 
+            case "":
+                break;
+
             default:
                 printOperationCodeError();
         }
@@ -158,7 +161,8 @@ function getLine($writer, $stats, $line) {
         else
             $stats->writeIn($data[0], null);
 
-        $instruction->convertToXML($writer);
+        if ($parts[0] != "")
+            $instruction->convertToXML($writer);
 
     }
 
@@ -222,7 +226,7 @@ function isConst($arg) {
                 break;
 
             case "string":
-                if (preg_match('/^(_|\D|\\\d\d\d)(\D|\\\d\d\d|\d|[\<,\-,\>,\/,\\,\@])*$/', $data[1]))
+                if (preg_match('/^$|^(_|\w|\\\d\d\d|[á|č|ď|é|ě|í|ň|ó|ř|š|ť|ú|ů|ý|ž])(\w|\\\d\d\d|[\<,\-,\>,\/,\@,\=,\§,\,,\;,\(,\),\&]|[á|č|ď|é|ě|í|ň|ó|ř|š|ť|ú|ů|ý|ž])*$/', $data[1]))
                     return $arg;
                 break;
 
@@ -233,7 +237,6 @@ function isConst($arg) {
         }
 
     } 
-    
     printLexicalError();
 }
 
@@ -245,7 +248,7 @@ function isType($arg) {
 }
 
 function isLabel($arg) {
-    if (preg_match('/^(_|-|\$|&|%|\*|[a-zA-Z])(_|-|\$|&|%|\*|[a-zA-Z0-9])*$/', $arg))
+    if (preg_match('/^(\?|!|_|-|\$|&|%|\*|[a-zA-Z])(\?|!|_|-|\$|&|%|\*|[a-zA-Z0-9])*$/', $arg))
         return $arg;
     
     printLexicalError();
