@@ -1,8 +1,8 @@
 class Frame:
     
-    def __init__(self, definition):
+    def __init__(self):
         self.frame = list()
-        self.definition = definition
+        self.definition = False
         
     def newVar(self, text):
         if self.definition == False:
