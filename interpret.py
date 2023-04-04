@@ -1,4 +1,4 @@
-from interpretClasses.Interpret import Interpret
+from interpretClasses.main import Interpret
 
 if __name__ == "__main__":
     interpret = Interpret()

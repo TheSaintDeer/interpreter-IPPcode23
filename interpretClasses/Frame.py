@@ -51,7 +51,7 @@ class Frame:
             
     def get(self, name):
         if self.definition == False:
-            return 55
+            exit(55)
         
         for i in self.frame:
             if name in i:

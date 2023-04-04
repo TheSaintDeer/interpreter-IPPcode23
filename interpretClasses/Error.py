@@ -21,3 +21,4 @@ class Error:
     def printError(self, errCode):
         sys.stderr.write(self.__typeError[errCode])
         exit(errCode)
+        # python3 interpret.py --source=ipp-2023-tests/interpret-only/32

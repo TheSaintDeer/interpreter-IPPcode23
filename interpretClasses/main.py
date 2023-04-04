@@ -29,12 +29,12 @@ class Interpret:
         parser.add_argument("--input", help = "file for input")
         parametrs = parser.parse_args()
         
-        # self.XMLfile = input() if parametrs.source == None else parametrs.source
-        # self.inputData = input() if parametrs.input == None else parametrs.input
+        # self.XMLfile = parametrs.source if parametrs.source else input()
+        # self.inputData = parametrs.input if parametrs.input else None
 
         try:
-            # self.XMLtree = ET.parse(XMLfile).getroot()
-            self.XMLtree = ET.parse("in.xml").getroot()
+            # self.XMLtree = ET.parse(self.XMLfile).getroot()
+            self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/stack_tests/stack_adds_notint.src").getroot()
         except FileNotFoundError:
             self.error.printError(11)
         except Exception as e:
@@ -52,7 +52,6 @@ class Interpret:
             self.error.printError(32)
             
         listLabel = list()
-        # orderInstr = 0
         for instruction in self.XMLtree:
     
             if instruction.tag != "instruction":
@@ -86,11 +85,10 @@ class Interpret:
                 if instruction.attrib['opcode'] == "LABEL":
                     if arg.text in listLabel:
                         self.error.printError(52)
-                    self.listLabel.append(str(arg.text))
+                    listLabel.append(str(arg.text))
                     
             instr = Instruction(instruction.attrib['opcode'], instruction)
             self.listInstuction.append([int(instruction.attrib['order']), instr])
-            # orderInstr += 1
             
         def sortByOrder(elem):
             return elem[0]
@@ -322,11 +320,11 @@ class Interpret:
 
                 case "READ":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
-                    # if self.inputData:
-                    #     readValue = self.inputData.readline()
-                    #     readValue = readValue.strip()
-                    # else:
-                    readValue = input()
+                    if self.inputData:
+                        readValue = self.inputData.readline()
+                        readValue = readValue.strip()
+                    else:
+                        readValue = input()
                         
                     self.frame[frameVar].set(nameVar, readValue, instr.arg2['text'])
                     
@@ -383,14 +381,17 @@ class Interpret:
                     pass
                 
                 case "JUMP":
+                    found = False
                     for i in self.listInstuction:
                         if i[1].opcode == "LABEL":
                             if i[1].arg1['text'] == instr.arg1['text']:
                                 order = self.listInstuction.index(i)
-                    self.error.printError(52)
+                                found = True
+                                break
+                    if not found:
+                        self.error.printError(52)
                                 
                 case "JUMPIFEQ":
-                    frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
@@ -398,14 +399,17 @@ class Interpret:
                         self.error.printError(53) 
                     
                     if valueSymb1 == valueSymb2:
+                        found = False
                         for i in self.listInstuction:
                             if i[1].opcode == "LABEL":
                                 if i[1].arg1['text'] == instr.arg1['text']:
                                     order = self.listInstuction.index(i)
-                        self.error.printError(52)
+                                    found = True
+                                    break
+                        if not found:
+                            self.error.printError(52)
                                     
                 case "JUMPIFNEQ":
-                    frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
                     
@@ -413,11 +417,15 @@ class Interpret:
                         self.error.printError(53) 
                     
                     if valueSymb1 != valueSymb2:
+                        found = False
                         for i in self.listInstuction:
                             if i[1].opcode == "LABEL":
                                 if i[1].arg1['text'] == instr.arg1['text']:
                                     order = self.listInstuction.index(i)
-                        self.error.printError(52)
+                                    found = True
+                                    break
+                        if not found:
+                            self.error.printError(52)
                                     
                 case "EXIT":
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg1)
