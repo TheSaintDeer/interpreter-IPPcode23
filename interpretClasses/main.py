@@ -2,6 +2,7 @@ import argparse
 import xml.etree.ElementTree as ET
 import re
 import copy
+import sys
 from interpretClasses.Instruction import Instruction
 from interpretClasses.Frame import Frame
 from interpretClasses.Error import Error
@@ -29,12 +30,12 @@ class Interpret:
         parser.add_argument("--input", help = "file for input")
         parametrs = parser.parse_args()
         
-        # self.XMLfile = parametrs.source if parametrs.source else input()
-        # self.inputData = parametrs.input if parametrs.input else None
+        self.XMLfile = parametrs.source if parametrs.source else input()
+        self.inputData = parametrs.input if parametrs.input else None
 
         try:
-            # self.XMLtree = ET.parse(self.XMLfile).getroot()
-            self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/stack_tests/stack_adds_notint.src").getroot()
+            self.XMLtree = ET.parse(self.XMLfile).getroot()
+            # self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/valid/type.src").getroot()
         except FileNotFoundError:
             self.error.printError(11)
         except Exception as e:
@@ -69,13 +70,8 @@ class Interpret:
             if 'opcode' not in instruction.attrib:
                 self.error.printError(32)
             
-            argOrder = 0
+            instr = Instruction(instruction.attrib['opcode'])
             for arg in instruction:
-                argOrder += 1
-                
-                if arg.tag != "arg"+str(argOrder):
-                    self.error.printError(32)
-                    
                 if 'type' not in arg.attrib:
                     self.error.printError(32)
                     
@@ -87,7 +83,13 @@ class Interpret:
                         self.error.printError(52)
                     listLabel.append(str(arg.text))
                     
-            instr = Instruction(instruction.attrib['opcode'], instruction)
+                instr.setArg(arg)
+                    
+            try:
+                instr.controlArg()
+            except:
+                self.error.printError(32)
+                
             self.listInstuction.append([int(instruction.attrib['order']), instr])
             
         def sortByOrder(elem):
@@ -110,7 +112,7 @@ class Interpret:
             instr = self.listInstuction[order][1]
             order += 1
             
-            match instr.opcode:
+            match instr.opcode.upper():
                 
                 case "MOVE":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
@@ -299,7 +301,7 @@ class Interpret:
                         self.error.printError(53)
 
                     try:
-                        self.frame[frameVar].set(nameVar, str(int(valueSymb1)), "string")
+                        self.frame[frameVar].set(nameVar, chr(int(valueSymb1)), "string")
                     except:
                         self.error.printError(58)
 
@@ -320,23 +322,35 @@ class Interpret:
 
                 case "READ":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
+                    typeVar = instr.arg2['text']
                     if self.inputData:
                         readValue = self.inputData.readline()
                         readValue = readValue.strip()
                     else:
                         readValue = input()
                         
-                    self.frame[frameVar].set(nameVar, readValue, instr.arg2['text'])
+                    if typeVar == "bool":
+                        if readValue not in ["true", "false"]:
+                            self.error.printError(11)
+                            
+                    if typeVar == "int":
+                        try:
+                            int(readValue)
+                        except:
+                            self.error.printError(11)
+                        
+                    self.frame[frameVar].set(nameVar, readValue, typeVar)
                     
                 case "WRITE":
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg1)
                     
-                    valueSymb1 = re.sub(r"\\032", " ", valueSymb1)
-                    valueSymb1 = re.sub(r"\\035", "#", valueSymb1)
-                    valueSymb1 = re.sub(r"\\092", "\\\\", valueSymb1)
-                    valueSymb1 = re.sub(r"\\010", "\\n", valueSymb1)
+                    if valueSymb1 != None:
+                        valueSymb1 = re.sub(r"\\032", " ", valueSymb1)
+                        valueSymb1 = re.sub(r"\\035", "#", valueSymb1)
+                        valueSymb1 = re.sub(r"\\092", "\\\\", valueSymb1)
+                        valueSymb1 = re.sub(r"\\010", "\\n", valueSymb1)
 
-                    if not(valueSymb1 == "nil"):
+                    if not(valueSymb1 in ["nil", None]):
                         print(valueSymb1, end="")
                         
                 case "CONCAT":
@@ -375,7 +389,7 @@ class Interpret:
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     
-                    self.frame[frameVar].set(nameVar, valueSymb1, "type")
+                    self.frame[frameVar].set(nameVar, typeSymb1, "type")
                     
                 case "LABEL":
                     pass
@@ -440,6 +454,12 @@ class Interpret:
                         exit(57)
 
                     exit(int(valueSymb1))
+                    
+                case "DPRINT":
+                    pass
+                                    
+                case "BREAK":
+                    pass
                     
                 case other:
                     self.error.printError(32)

@@ -12,30 +12,13 @@ class Frame:
             if text in i:
                 return 55
         
-        self.frame.append({text: None, 'type': None})
+        self.frame.append({text: None, text+'type': None})
         return 0
             
     def definiteTemporaryFrame(self):
         self.definition = True
         self.frame.clear()
         return 0
-        
-    # def push(self):
-    #     if self.definition:
-    #         self.frame.append(self.temporaryFrame.copy())
-    #         self.definition = False
-    #         self.frame.clear()
-    #         return 0
-    #     else:
-    #         return 55
-        
-    # def pop(self):
-    #     try:
-    #         self.temporaryFrame = self.localFrame.pop()
-    #         self.defineTemporaryFrame = True
-    #         return 0
-    #     except:
-    #         return 55
         
     def set(self, nameVar, value, type):
         if self.frame == False:
@@ -46,7 +29,7 @@ class Frame:
                 index = self.frame.index(i)
             
         self.frame[index][nameVar] = value
-        self.frame[index]['type'] = type
+        self.frame[index][nameVar+'type'] = type
         return 0
             
     def get(self, name):
@@ -58,7 +41,7 @@ class Frame:
                 index = self.frame.index(i)
                 break
         
-        return self.frame[index][name], self.frame[index]['type']
+        return self.frame[index][name], self.frame[index][name+'type']
     
     def clean(self):
         self.definition = False
