@@ -75,7 +75,7 @@ class Interpret:
                 if 'type' not in arg.attrib:
                     self.error.printError(32)
                     
-                if arg.attrib['type'] not in  ["var", "string", "int", "nil", "label", "type", "bool"]:
+                if arg.attrib['type'] not in  ["var", "string", "int", "nil", "label", "type", "bool", "float"]:
                     self.error.printError(32)
                 
                 if instruction.attrib['opcode'] == "LABEL":
@@ -171,63 +171,87 @@ class Interpret:
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int"]:
+                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
                         self.error.printError(53)
                         
-                    try:
-                        result = int(valueSymb1) + int(valueSymb2)
-                    except:
-                        self.error.printError(32)
-
-                    self.frame[frameVar].set(nameVar, str(result), "int")
+                    if "float" in [typeSymb1, typeSymb2]:
+                        try:
+                            result = float(valueSymb1) + float(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "float")
+                    else:
+                        try:
+                            result = int(valueSymb1) + int(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
 
                 case "SUB":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int"]:
+                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
                         self.error.printError(53)
 
-                    try:
-                        result = int(valueSymb1) - int(valueSymb2)
-                    except:
-                        self.error.printError(32)
-
-                    self.frame[frameVar].set(nameVar, str(result), "int")
+                    if "float" in [typeSymb1, typeSymb2]:
+                        try:
+                            result = float(valueSymb1) - float(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "float")
+                    else:
+                        try:
+                            result = int(valueSymb1) - int(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
                     
                 case "MUL":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int"]:
+                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
                         self.error.printError(53)
 
-                    try:
-                        result = int(valueSymb1) * int(valueSymb2)
-                    except:
-                        self.error.printError(32)
-
-                    self.frame[frameVar].set(nameVar, str(result), "int")
+                    if "float" in [typeSymb1, typeSymb2]:
+                        try:
+                            result = float(valueSymb1) * float(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "float")
+                    else:
+                        try:
+                            result = int(valueSymb1) * int(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
                 
                 case "IDIV":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int"]:
+                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
                         self.error.printError(53)
 
-                    if valueSymb2 == "0":
+                    if int(valueSymb2) == 0:
                         self.error.printError(57)
 
-                    try:
-                        result = int(int(valueSymb1) / int(valueSymb2))
-                    except:
-                        self.error.printError(32)
-
-                    self.frame[frameVar].set(nameVar, str(result), "int")
+                    if "float" in [typeSymb1, typeSymb2]:
+                        try:
+                            result = int(float(valueSymb1) / float(valueSymb2))
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
+                    else:
+                        try:
+                            result = int(int(valueSymb1) + int(valueSymb2))
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
 
                 case "LT":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
@@ -237,7 +261,7 @@ class Interpret:
                     if "nil" in [valueSymb1, valueSymb2]:
                         self.error.printError(53)
 
-                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool"]:
+                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "float"]:
                         result = "true" if valueSymb1 < valueSymb2 else "false"
                         self.frame[frameVar].set(nameVar, str(result), "int")
 
@@ -249,7 +273,7 @@ class Interpret:
                     if "nil" in [valueSymb1, valueSymb2]:
                         self.error.printError(53)
 
-                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool"]:
+                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "float"]:
                         result = "true" if valueSymb1 > valueSymb2 else "false"
                         self.frame[frameVar].set(nameVar, str(result), "int")
                         
@@ -258,7 +282,7 @@ class Interpret:
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "nil"]:
+                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "nil", "float"]:
                         result = "true" if valueSymb1 < valueSymb2 else "false"
                         self.frame[frameVar].set(nameVar, str(result), "int")
 
@@ -338,6 +362,12 @@ class Interpret:
                             int(readValue)
                         except:
                             self.error.printError(11)
+                            
+                    if typeVar == "float":
+                        try:
+                            readValue = float.fromhex(readValue)
+                        except:
+                            self.error.printError(11)
                         
                     self.frame[frameVar].set(nameVar, readValue, typeVar)
                     
@@ -349,6 +379,9 @@ class Interpret:
                         valueSymb1 = re.sub(r"\\035", "#", valueSymb1)
                         valueSymb1 = re.sub(r"\\092", "\\\\", valueSymb1)
                         valueSymb1 = re.sub(r"\\010", "\\n", valueSymb1)
+                        
+                    if typeSymb1 == "float":
+                        valueSymb1 = str(float.hex(float(valueSymb1)))
 
                     if not(valueSymb1 in ["nil", None]):
                         print(valueSymb1, end="")
@@ -373,13 +406,19 @@ class Interpret:
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
-
+                    
+                    if typeSymb2 != "int":
+                        self.error.printError(57)
+                    
                     self.frame[frameVar].set(nameVar, valueSymb1[int(valueSymb2)], "string")
                     
                 case "SETCHAR":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
+                    
+                    if typeSymb1 != "int":
+                        self.error.printError(57)
 
                     newValue, newType = self.frame[frameVar].get(nameVar)
                     newValue[int(valueSymb1)] = valueSymb2
@@ -460,7 +499,103 @@ class Interpret:
                                     
                 case "BREAK":
                     pass
+                
+                case "INT2FLOAT":
+                    frameVar, nameVar = self.__splitting(instr.arg1['text'])
+                    valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     
+                    if typeSymb1 != "int":
+                        self.error.printError(53)
+                    
+                    self.frame[frameVar].set(nameVar, float(valueSymb1), "float")
+                
+                case "FLOAT2INT":
+                    frameVar, nameVar = self.__splitting(instr.arg1['text'])
+                    valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
+                    
+                    if typeSymb1 != "float":
+                        self.error.printError(53)
+                    
+                    self.frame[frameVar].set(nameVar, int(float(valueSymb1)), "int")
+                    
+                case "DIV":
+                    frameVar, nameVar = self.__splitting(instr.arg1['text'])
+                    valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
+                    valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
+
+                    if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+
+                    if int(valueSymb2) == 0:
+                        self.error.printError(57)
+
+                    if "float" in [typeSymb1, typeSymb2]:
+                        try:
+                            result = float(valueSymb1) / float(valueSymb2)
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "float")
+                    else:
+                        try:
+                            result = int(int(valueSymb1) + int(valueSymb2))
+                        except:
+                            self.error.printError(32)
+                        self.frame[frameVar].set(nameVar, str(result), "int")
+                    
+                case "CLEARS":
+                    self.dataStack.clear()
+                
+                case "ADDS":
+                    pass
+                
+                case "SUBS":
+                    pass
+                
+                case "MULS":
+                    pass
+                
+                case "IDIVS":
+                    pass
+                
+                case "DIVS":
+                    pass
+                
+                case "LTS":
+                    pass
+                
+                case "GTS":
+                    pass
+                
+                case "EQS":
+                    pass
+                
+                case "ANDS":
+                    pass
+                
+                case "ORS":
+                    pass
+                
+                case "NOTS":
+                    pass
+                
+                case "INT2CHARS":
+                    pass
+                
+                case "STRI2INTS":
+                    pass
+                
+                case "JUMPIFEQS":
+                    pass
+                
+                case "JUMPIFNEQS":
+                    pass
+                
+                case "INT2FLOATS":
+                    pass
+                
+                case "FLOAT2INTS":
+                    pass
+                
                 case other:
                     self.error.printError(32)
                     
