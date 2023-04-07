@@ -283,7 +283,7 @@ class Interpret:
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
                     if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "nil", "float"]:
-                        result = "true" if valueSymb1 < valueSymb2 else "false"
+                        result = "true" if valueSymb1 == valueSymb2 else "false"
                         self.frame[frameVar].set(nameVar, str(result), "int")
 
                 case "AND":
@@ -507,7 +507,7 @@ class Interpret:
                     if typeSymb1 != "int":
                         self.error.printError(53)
                     
-                    self.frame[frameVar].set(nameVar, float(valueSymb1), "float")
+                    self.frame[frameVar].set(nameVar, str(float(valueSymb1)), "float")
                 
                 case "FLOAT2INT":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
@@ -516,7 +516,7 @@ class Interpret:
                     if typeSymb1 != "float":
                         self.error.printError(53)
                     
-                    self.frame[frameVar].set(nameVar, int(float(valueSymb1)), "int")
+                    self.frame[frameVar].set(nameVar, str(int(float(valueSymb1))), "int")
                     
                 case "DIV":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
@@ -546,55 +546,247 @@ class Interpret:
                     self.dataStack.clear()
                 
                 case "ADDS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+                        
+                    if "float" in [value1[1], value2[1]]:
+                        try:
+                            result = float(value1[0]) + float(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "float"])
+                    else:
+                        try:
+                            result = int(value1[0]) + int(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
                 
                 case "SUBS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+                        
+                    if "float" in [value1[1], value2[1]]:
+                        try:
+                            result = float(value1[0]) - float(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "float"])
+                    else:
+                        try:
+                            result = int(value1[0]) - int(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
                 
                 case "MULS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+                        
+                    if "float" in [value1[1], value2[1]]:
+                        try:
+                            result = float(value1[0]) * float(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "float"])
+                    else:
+                        try:
+                            result = int(value1[0]) * int(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
                 
                 case "IDIVS":
-                    pass
-                
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+
+                    if int(value2[0]) == 0:
+                        self.error.printError(57)
+                        
+                    if "float" in [value1[1], value2[1]]:
+                        try:
+                            result = int(float(value1[0]) / float(value2[0]))
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
+                    else:
+                        try:
+                            result = int(int(value1[0]) / int(value2[0]))
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
+
                 case "DIVS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
+                        self.error.printError(53)
+
+                    if int(value2[0]) == 0:
+                        self.error.printError(57)
+                        
+                    if "float" in [value1[1], value2[1]]:
+                        try:
+                            result = float(value1[0]) / float(value2[0])
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "float"])
+                    else:
+                        try:
+                            result = int(int(value1[0]) / int(value2[0]))
+                        except:
+                            self.error.printError(32)
+                        self.dataStack.append([result, "int"])
                 
                 case "LTS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if "nil" in [value1[1], value2[1]]:
+                        self.error.printError(53)
+
+                    if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
+                        result = "true" if value1[0] < value2[0] else "false"
+                        self.dataStack.append([result, "bool"])
                 
                 case "GTS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if "nil" in [value1[1], value2[1]]:
+                        self.error.printError(53)
+
+                    if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
+                        result = "true" if value1[0] > value2[0] else "false"
+                        self.dataStack.append([result, "bool"])
                 
                 case "EQS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if "nil" in [value1[1], value2[1]]:
+                        self.error.printError(53)
+
+                    if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
+                        result = "true" if value1[0] == value2[0] else "false"
+                        self.dataStack.append([result, "bool"])
                 
                 case "ANDS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    condition1 = True if value1[0] == "true" else False
+                    condition2 = True if value2[0] == "true" else False
+
+                    result = condition1 and condition2
+                    self.dataStack.append([result, "bool"])
                 
                 case "ORS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    condition1 = True if value1[0] == "true" else False
+                    condition2 = True if value2[0] == "true" else False
+
+                    result = condition1 or condition2
+                    self.dataStack.append([result, "bool"])
                 
                 case "NOTS":
-                    pass
+                    value1 = self.dataStack.pop()
+
+                    condition1 = True if value1[0] == "true" else False
+
+                    result = not condition1
+                    self.dataStack.append([result, "bool"])
                 
                 case "INT2CHARS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    
+                    if value1[1] != "int":
+                        self.error.printError(53)
+
+                    try:
+                        self.dataStack.append([chr(int(valueSymb1)), "string"])
+                    except:
+                        self.error.printError(58)
                 
                 case "STRI2INTS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+                    
+                    if value1[1] != "string" or value2[1] != "int":
+                        self.error.printError(53)
+
+                    if int(value2[0]) >= len(value1[0]) or int(valueSymb2) < 0:
+                        exit(58)
+
+                    result = value1[0][int(value2[0])]
+                    self.dataStack.append([ord(result), "int"])
                 
                 case "JUMPIFEQS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or "nil" in [value1[1], value2[1]]:
+                        self.error.printError(53) 
+                    
+                    if value1[0] == value1[0]:
+                        found = False
+                        for i in self.listInstuction:
+                            if i[1].opcode == "LABEL":
+                                if i[1].arg1['text'] == instr.arg1['text']:
+                                    order = self.listInstuction.index(i)
+                                    found = True
+                                    break
+                        if not found:
+                            self.error.printError(52)
                 
                 case "JUMPIFNEQS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    value2 = self.dataStack.pop()
+
+                    if value1[1] != value2[1] or "nil" in [value1[1], value2[1]]:
+                        self.error.printError(53) 
+                    
+                    if value1[0] != value1[0]:
+                        found = False
+                        for i in self.listInstuction:
+                            if i[1].opcode == "LABEL":
+                                if i[1].arg1['text'] == instr.arg1['text']:
+                                    order = self.listInstuction.index(i)
+                                    found = True
+                                    break
+                        if not found:
+                            self.error.printError(52)
                 
                 case "INT2FLOATS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    
+                    if value1[1] != "int":
+                        self.error.printError(53)
+                    
+                    self.dataStack.append([str(float(value1[0])), "float"])
                 
                 case "FLOAT2INTS":
-                    pass
+                    value1 = self.dataStack.pop()
+                    
+                    if value1[1] != "float":
+                        self.error.printError(53)
+                    
+                    self.dataStack.append([str(int(float(value1[0]))), "int"])
                 
                 case other:
                     self.error.printError(32)

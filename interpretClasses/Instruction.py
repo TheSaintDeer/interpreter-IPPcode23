@@ -27,11 +27,11 @@ class Instruction:
             
     def controlArg(self):
         
-        if self.opcode in ["CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK", "CLEARS"]:
+        if self.opcode in ["CREATEFRAME", "PUSHFRAME", "POPFRAME", "RETURN", "BREAK", "CLEARS", "ADDS", "SUBS", "MULS", "IDIVS", "DIVS", "LTS", "GTS", "EQS", "ANDS", "ORS", "NOTS", "INT2CHARS", "STRI2INTS", "INT2FLOATS", "FLOAT2INTS"]:
             if self.arg1 != None or self.arg2 != None or self.arg3 != None:
                 exit(32)
         
-        if self.opcode in ["DEFVAR", "CALL", "PUSHS", "POPS", "WRITE", "LABEL", "JUMP", "EXIT", "DPRINT"]:
+        if self.opcode in ["DEFVAR", "CALL", "PUSHS", "POPS", "WRITE", "LABEL", "JUMP", "EXIT", "DPRINT", "JUMPIFEQS", "JUMPIFNEQS"]:
             if self.arg1 == None or self.arg2 != None or self.arg3 != None:
                 exit(32)
                 
