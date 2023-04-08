@@ -21,12 +21,18 @@ class Frame:
         return 0
         
     def set(self, nameVar, value, type):
-        if self.frame == False:
-            return 55
+        if self.definition == False:
+            exit(55)
         
+        found = False
         for i in self.frame:
             if nameVar in i:
                 index = self.frame.index(i)
+                found = True
+                break
+        
+        if not found:
+            exit(54)
             
         self.frame[index][nameVar] = value
         self.frame[index][nameVar+'type'] = type
@@ -36,10 +42,15 @@ class Frame:
         if self.definition == False:
             exit(55)
         
+        found = False
         for i in self.frame:
             if name in i:
                 index = self.frame.index(i)
+                found = True
                 break
+            
+        if not found:
+            exit(54)
         
         return self.frame[index][name], self.frame[index][name+'type']
     

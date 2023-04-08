@@ -35,11 +35,17 @@ class Interpret:
 
         try:
             self.XMLtree = ET.parse(self.XMLfile).getroot()
-            # self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/valid/type.src").getroot()
         except FileNotFoundError:
             self.error.printError(11)
         except Exception as e:
             self.error.printError(31)
+            
+        # try:
+        #     self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/float_tests/float_move.src").getroot()
+        # except FileNotFoundError:
+        #     self.error.printError(11)
+        # except Exception as e:
+        #     self.error.printError(31)
             
     def XMLtoInstr(self):
         
@@ -117,6 +123,8 @@ class Interpret:
                 case "MOVE":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
+                    if typeSymb1 == "float":
+                        valueSymb1 = str(float.fromhex(valueSymb1))
                     self.frame[frameVar].set(nameVar, valueSymb1, typeSymb1)
                     
                 case "CREATEFRAME":
@@ -365,7 +373,7 @@ class Interpret:
                             
                     if typeVar == "float":
                         try:
-                            readValue = float.fromhex(readValue)
+                            readValue = str(float.fromhex(readValue))
                         except:
                             self.error.printError(11)
                         
@@ -374,7 +382,7 @@ class Interpret:
                 case "WRITE":
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg1)
                     
-                    if valueSymb1 != None:
+                    if valueSymb1 == "string":
                         valueSymb1 = re.sub(r"\\032", " ", valueSymb1)
                         valueSymb1 = re.sub(r"\\035", "#", valueSymb1)
                         valueSymb1 = re.sub(r"\\092", "\\\\", valueSymb1)
@@ -504,6 +512,9 @@ class Interpret:
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     
+                    if valueSymb1 == None:
+                        self.error.printError(56)
+                        
                     if typeSymb1 != "int":
                         self.error.printError(53)
                     
@@ -513,6 +524,9 @@ class Interpret:
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     
+                    if valueSymb1 == None:
+                        self.error.printError(56)
+                        
                     if typeSymb1 != "float":
                         self.error.printError(53)
                     
@@ -526,7 +540,7 @@ class Interpret:
                     if typeSymb1 != typeSymb2 or typeSymb1 not in ["nil", "int", "float"]:
                         self.error.printError(53)
 
-                    if int(valueSymb2) == 0:
+                    if int(float(valueSymb2)) == 0:
                         self.error.printError(57)
 
                     if "float" in [typeSymb1, typeSymb2]:
@@ -797,10 +811,7 @@ class Interpret:
             frameSymb, nameSymb = self.__splitting(argument['text'])
             frame = self.frame[frameSymb]
             
-            try:
-                return frame.get(nameSymb)
-            except:
-                self.error.printError(55)
+            return frame.get(nameSymb)
         
         else:
             return argument['text'], argument['type']
