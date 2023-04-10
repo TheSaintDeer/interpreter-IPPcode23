@@ -31,7 +31,7 @@ class Interpret:
         parametrs = parser.parse_args()
         
         self.XMLfile = parametrs.source if parametrs.source else input()
-        self.inputData = parametrs.input if parametrs.input else None
+        self.inputData = open(parametrs.input, "r") if parametrs.input else None
 
         try:
             self.XMLtree = ET.parse(self.XMLfile).getroot()
@@ -41,7 +41,7 @@ class Interpret:
             self.error.printError(31)
             
         # try:
-        #     self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/float_tests/float_move.src").getroot()
+        #     self.XMLtree = ET.parse("ipp-2023-tests/interpret-only/stack_tests/stack_jumpifneqs_int.src").getroot()
         # except FileNotFoundError:
         #     self.error.printError(11)
         # except Exception as e:
@@ -123,8 +123,6 @@ class Interpret:
                 case "MOVE":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
-                    if typeSymb1 == "float":
-                        valueSymb1 = str(float.fromhex(valueSymb1))
                     self.frame[frameVar].set(nameVar, valueSymb1, typeSymb1)
                     
                 case "CREATEFRAME":
@@ -256,7 +254,7 @@ class Interpret:
                         self.frame[frameVar].set(nameVar, str(result), "int")
                     else:
                         try:
-                            result = int(int(valueSymb1) + int(valueSymb2))
+                            result = int(int(valueSymb1) / int(valueSymb2))
                         except:
                             self.error.printError(32)
                         self.frame[frameVar].set(nameVar, str(result), "int")
@@ -266,49 +264,55 @@ class Interpret:
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if "nil" in [valueSymb1, valueSymb2]:
-                        self.error.printError(53)
-
                     if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "float"]:
                         result = "true" if valueSymb1 < valueSymb2 else "false"
-                        self.frame[frameVar].set(nameVar, str(result), "int")
+                        self.frame[frameVar].set(nameVar, result, "int")
+                    else:
+                        self.error.printError(53)
 
                 case "GT":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if "nil" in [valueSymb1, valueSymb2]:
-                        self.error.printError(53)
-
                     if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "float"]:
                         result = "true" if valueSymb1 > valueSymb2 else "false"
-                        self.frame[frameVar].set(nameVar, str(result), "int")
-                        
+                        self.frame[frameVar].set(nameVar, result, "int")
+                    else:
+                        self.error.printError(53)
+
                 case "EQ":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "nil", "float"]:
+                    if typeSymb1 == typeSymb2 and typeSymb1 in ["int", "string", "bool", "float"] or "nil" in [typeSymb1, typeSymb2]:
                         result = "true" if valueSymb1 == valueSymb2 else "false"
-                        self.frame[frameVar].set(nameVar, str(result), "int")
+                        self.frame[frameVar].set(nameVar, result, "int")
+                    else:
+                        self.error.printError(53)
 
                 case "AND":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
+                    if typeSymb1 != "bool" or typeSymb2 != "bool":
+                        self.error.printError(53)
+
                     condition1 = True if valueSymb1 == "true" else False
                     condition2 = True if valueSymb2 == "true" else False
 
                     result = condition1 and condition2
-                    self.frame[frameVar].set(nameVar, str(result), "bool")
+                    self.frame[frameVar].set(nameVar, str(result).lower(), "bool")
 
                 case "OR":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
+
+                    if typeSymb1 != "bool" or typeSymb2 != "bool":
+                        self.error.printError(53)
 
                     condition1 = True if valueSymb1 == "true" else False
                     condition2 = True if valueSymb2 == "true" else False
@@ -319,6 +323,9 @@ class Interpret:
                 case "NOT":
                     frameVar, nameVar = self.__splitting(instr.arg1['text'])
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
+
+                    if typeSymb1 != "bool":
+                        self.error.printError(53)
 
                     condition1 = True if valueSymb1 == "true" else False
 
@@ -382,7 +389,7 @@ class Interpret:
                 case "WRITE":
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg1)
                     
-                    if valueSymb1 == "string":
+                    if typeSymb1 == "string":
                         valueSymb1 = re.sub(r"\\032", " ", valueSymb1)
                         valueSymb1 = re.sub(r"\\035", "#", valueSymb1)
                         valueSymb1 = re.sub(r"\\092", "\\\\", valueSymb1)
@@ -456,7 +463,7 @@ class Interpret:
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
 
-                    if typeSymb1 != typeSymb2 or "nil" in [typeSymb1, typeSymb2]:
+                    if typeSymb1 != typeSymb2 and "nil" not in [typeSymb1, typeSymb2]:
                         self.error.printError(53) 
                     
                     if valueSymb1 == valueSymb2:
@@ -474,7 +481,7 @@ class Interpret:
                     valueSymb1, typeSymb1 = self.__workSymb(instr.arg2)
                     valueSymb2, typeSymb2 = self.__workSymb(instr.arg3)
                     
-                    if typeSymb1 != typeSymb2 or "nil" in [typeSymb1, typeSymb2]:
+                    if typeSymb1 != typeSymb2 and "nil" not in [typeSymb1, typeSymb2]:
                         self.error.printError(53) 
                     
                     if valueSymb1 != valueSymb2:
@@ -560,8 +567,8 @@ class Interpret:
                     self.dataStack.clear()
                 
                 case "ADDS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
                     if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
                         self.error.printError(53)
@@ -580,8 +587,8 @@ class Interpret:
                         self.dataStack.append([result, "int"])
                 
                 case "SUBS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
                     if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
                         self.error.printError(53)
@@ -600,8 +607,8 @@ class Interpret:
                         self.dataStack.append([result, "int"])
                 
                 case "MULS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
                     if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
                         self.error.printError(53)
@@ -620,8 +627,8 @@ class Interpret:
                         self.dataStack.append([result, "int"])
                 
                 case "IDIVS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
                     if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
                         self.error.printError(53)
@@ -643,8 +650,8 @@ class Interpret:
                         self.dataStack.append([result, "int"])
 
                 case "DIVS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
                     if value1[1] != value2[1] or value1[1] not in ["nil", "int", "float"]:
                         self.error.printError(53)
@@ -666,65 +673,71 @@ class Interpret:
                         self.dataStack.append([result, "int"])
                 
                 case "LTS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
-
-                    if "nil" in [value1[1], value2[1]]:
-                        self.error.printError(53)
+                    value1 = self.dataStack.pop()
 
                     if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
                         result = "true" if value1[0] < value2[0] else "false"
                         self.dataStack.append([result, "bool"])
+                    else:
+                        self.error.printError(53)
                 
                 case "GTS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
-
-                    if "nil" in [value1[1], value2[1]]:
-                        self.error.printError(53)
+                    value1 = self.dataStack.pop()
 
                     if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
                         result = "true" if value1[0] > value2[0] else "false"
                         self.dataStack.append([result, "bool"])
+                    else:
+                        self.error.printError(53)
                 
                 case "EQS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
-                    if "nil" in [value1[1], value2[1]]:
-                        self.error.printError(53)
-
-                    if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"]:
+                    if value1[1] == value2[1] and value1[1] in ["int", "string", "bool", "float"] or "nil" in [value1[1], value2[1]]:
                         result = "true" if value1[0] == value2[0] else "false"
                         self.dataStack.append([result, "bool"])
+                    else:
+                        self.error.printError(53)
                 
                 case "ANDS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
+
+                    if value1[1] != "bool" or value2[1] != "bool":
+                        self.error.printError(53)
 
                     condition1 = True if value1[0] == "true" else False
                     condition2 = True if value2[0] == "true" else False
 
                     result = condition1 and condition2
-                    self.dataStack.append([result, "bool"])
+                    self.dataStack.append([str(result).lower(), "bool"])
                 
                 case "ORS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
+
+                    if value1[1] != "bool" or value2[1] != "bool":
+                        self.error.printError(53)
 
                     condition1 = True if value1[0] == "true" else False
                     condition2 = True if value2[0] == "true" else False
 
                     result = condition1 or condition2
-                    self.dataStack.append([result, "bool"])
+                    self.dataStack.append([str(result).lower(), "bool"])
                 
                 case "NOTS":
                     value1 = self.dataStack.pop()
 
+                    if value1[1] != "bool":
+                        self.error.printError(53)
+
                     condition1 = True if value1[0] == "true" else False
 
                     result = not condition1
-                    self.dataStack.append([result, "bool"])
+                    self.dataStack.append([str(result).lower(), "bool"])
                 
                 case "INT2CHARS":
                     value1 = self.dataStack.pop()
@@ -733,31 +746,31 @@ class Interpret:
                         self.error.printError(53)
 
                     try:
-                        self.dataStack.append([chr(int(valueSymb1)), "string"])
+                        self.dataStack.append([chr(int(value1[0])), "string"])
                     except:
                         self.error.printError(58)
                 
                 case "STRI2INTS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
                     
                     if value1[1] != "string" or value2[1] != "int":
                         self.error.printError(53)
 
-                    if int(value2[0]) >= len(value1[0]) or int(valueSymb2) < 0:
-                        exit(58)
+                    if int(value2[0]) >= len(value1[0]) or len(value1[0]) < 0:
+                        self.error.printError(58)
 
                     result = value1[0][int(value2[0])]
                     self.dataStack.append([ord(result), "int"])
                 
                 case "JUMPIFEQS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
-                    if value1[1] != value2[1] or "nil" in [value1[1], value2[1]]:
+                    if value1[1] != value2[1] and "nil" not in [value1[1], value2[1]]:
                         self.error.printError(53) 
                     
-                    if value1[0] == value1[0]:
+                    if value1[0] == value2[0]:
                         found = False
                         for i in self.listInstuction:
                             if i[1].opcode == "LABEL":
@@ -769,13 +782,13 @@ class Interpret:
                             self.error.printError(52)
                 
                 case "JUMPIFNEQS":
-                    value1 = self.dataStack.pop()
                     value2 = self.dataStack.pop()
+                    value1 = self.dataStack.pop()
 
-                    if value1[1] != value2[1] or "nil" in [value1[1], value2[1]]:
+                    if value1[1] != value2[1] and "nil" not in [value1[1], value2[1]]:
                         self.error.printError(53) 
                     
-                    if value1[0] != value1[0]:
+                    if value1[0] != value2[0]:
                         found = False
                         for i in self.listInstuction:
                             if i[1].opcode == "LABEL":
@@ -814,6 +827,8 @@ class Interpret:
             return frame.get(nameSymb)
         
         else:
+            if argument['type'] == "float":
+                return str(float.fromhex(argument['text'])), "float"
             return argument['text'], argument['type']
         
         
