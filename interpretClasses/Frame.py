@@ -1,25 +1,30 @@
+# Implementační dokumentace k 2. úloze do IPP 2022/2023
+# Jméno a příjmení: Ivan Golikov
+# Login: xgolik00
+
 class Frame:
     
     def __init__(self):
         self.frame = list()
         self.definition = False
         
+    # method needed to create a new variable
     def newVar(self, text):
         if self.definition == False:
-            return 55
+            exit(55)
         
+        # checking for the presence of a variable with the same name
         for i in self.frame:
             if text in i:
-                return 55
+                exit(52)
         
-        self.frame.append({text: None, text+'type': None})
-        return 0
+        self.frame.append({text: "", text+'type': ""})
             
     def definiteTemporaryFrame(self):
         self.definition = True
         self.frame.clear()
-        return 0
         
+    # set value and type for given variable
     def set(self, nameVar, value, type):
         if self.definition == False:
             exit(55)
@@ -38,6 +43,7 @@ class Frame:
         self.frame[index][nameVar+'type'] = type
         return 0
             
+    # get the value and type of the given variable
     def get(self, name):
         if self.definition == False:
             exit(55)
